@@ -1,0 +1,89 @@
+<form id="song-idea-form">
+  <label for="song-title">Song Title:</label>
+  <input type="text" id="song-title" name="songTitle" required>
+  
+  <label for="song-artist">Artist Name:</label>
+  <input type="text" id="song-artist" name="artistName" required>
+  
+  <label for="song-lyrics">Song Lyrics:</label>
+  <textarea id="song-lyrics" name="songLyrics" required></textarea>
+  
+  <label for="song-payment">Payment Amount (in ETH):</label>
+  <input type="number" id="song-payment" name="songPayment" min="0" step="0.001" required>
+  
+  <button type="submit">Submit Song Idea</button>
+</form>
+
+<script>
+  const songIdeaForm = document.getElementById('song-idea-form');
+
+  // On form submission, prompt user to sign a message
+  songIdeaForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    // Get form data
+    const formData = new FormData(event.target);
+    const songTitle = formData.get('songTitle');
+    const artistName = formData.get('artistName');
+    const songLyrics = formData.get('songLyrics');
+    const songPayment = formData.get('songPayment');
+
+    // Prompt user to sign message with their wallet
+    const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+    const message = `I am submitting the song idea "${songTitle}" by ${artistName}, with lyrics "${songLyrics}", and a payment of ${songPayment} ETH.`;
+    const signature = await ethereum.request({ method: 'personal_sign', params: [message, accounts[0]] });
+
+    // Submit form data and signature to server
+    const response = await fetch('/submit-song-idea', {
+      method: 'POST',
+      body: JSON.stringify({
+        songTitle,
+        artistName,
+        songLyrics,
+        songPayment,
+        signature,
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Show success message to user
+    const result = await response.json();
+    alert(result.message);
+  });
+
+  // On vote click, prompt user to sign a message
+  document.addEventListener('click', async (event) => {
+    if (event.target.classList.contains('vote-button')) {
+      event.preventDefault();
+
+      // Get vote data
+      const songId = event.target.dataset.songId;
+      const voteType = event.target.dataset.voteType;
+
+      // Prompt user to sign message with their wallet
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      const message = `I am voting ${voteType} for song ${songId}.`;
+      const signature = await ethereum.request({ method: 'personal_sign', params: [message, accounts[0]] });
+
+      // Submit vote data and signature to server
+      const response = await fetch('/submit-vote', {
+        method: 'POST',
+        body: JSON.stringify({
+          songId,
+          voteType,
+          signature,
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // Show success message to user
+      const result = await response.json();
+      alert(result.message);
+    }
+  });
+</script>
+
